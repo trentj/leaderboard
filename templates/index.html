@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Leaderboard</title>
+</head>
+<body>
+<h1>Leaderboard</h1>
+<h2>Most Wins</h2>
+
+<table>
+  {% for player in players %}
+    <tr>
+        <td>{{ player['name'] }}</td>
+        <td>{{ player['wins'] }}</td>
+    </tr>
+  {% endfor %}
+</table>
+</body>
+</html>
