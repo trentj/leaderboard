@@ -55,42 +55,18 @@ if __name__ == "__main__":
     sheets = {sheet.getAttribute("name"): sheet for sheet in sheets}
     games = read_simple_table(sheets["Games"])
     players = read_simple_table(sheets["Players"])
-    # pprint(players)
     results = read_results_table(sheets["Results"], games, players)
 
     db = sqlite3.connect("results.db")
     cur = db.cursor()
-    cur.execute("""
-    CREATE TABLE game (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL);""")
-    cur.execute("""
-    CREATE TABLE player (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL);""")
-    cur.execute("""
-    CREATE TABLE event (
-        id INTEGER PRIMARY KEY,
-        date TEXT NOT NULL,
-        game_id INTEGER NOT NULL,
-        FOREIGN KEY (game_id) REFERENCES game (id));""")
-    cur.execute("""
-    CREATE TABLE result (
-        event_id INTEGER NOT NULL,
-        player_id INTEGER NOT NULL,
-        next_teammate INTEGER,
-        winner INTEGER,
-        PRIMARY KEY (event_id, player_id),
-        FOREIGN KEY (event_id) REFERENCES event (id),
-        FOREIGN KEY (player_id) REFERENCES player (id));""")
+    with open("schema.sql") as fp:
+        cur.executescript(fp.read())
     db.commit()
 
     cur.executemany("INSERT OR IGNORE INTO game (name, id) VALUES (?, ?);", games.items())
     cur.executemany("INSERT INTO player (name, id) VALUES (?, ?);", players.items())
-    # pprint(results)
 
     for result in results:
-        # pprint(result)
         cur.execute("INSERT INTO event (date, game_id) VALUES (?, ?);",
                     (result["date"].isoformat(), result["game"]))
         event_id = cur.lastrowid
