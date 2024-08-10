@@ -26,6 +26,8 @@ def parse_players(nicknames, players):
                 if name.startswith(nick):
                     yield id_
                     break
+            else:
+                raise Exception(f"No such player {nick!r}")
 
 
 def read_results_table(sheet, games, players):
