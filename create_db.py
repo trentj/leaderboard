@@ -16,18 +16,30 @@ def read_alias_table(sheet):
     return result
 
 
+def next_id(alias_table):
+    return max(alias_table.values(), default=0) + 1
+
+
+def resolve_game(name, games):
+    if name not in games:
+        games[name] = next_id(games)
+    return games[name]
+
+
+def resolve_player(name, players):
+    if name in players:
+        return players[name]
+    for alias, id_ in players.items():
+        if alias.startswith(name):
+            return id_
+    players[name] = next_id(players)
+    return players[name]
+
+
 def parse_players(nicknames, players):
     nicks = nicknames.split("+")
     for nick in nicks:
-        if nick in players:
-            yield players[nick]
-        else:
-            for name, id_ in players.items():
-                if name.startswith(nick):
-                    yield id_
-                    break
-            else:
-                raise Exception(f"No such player {nick!r}")
+        yield resolve_player(nick, players)
 
 
 def read_results_table(sheet, games, players):
@@ -40,7 +52,7 @@ def read_results_table(sheet, games, players):
             continue
         date, game, winner, *others = row
         result["date"] = date
-        result["game"] = games[game]
+        result["game"] = resolve_game(game, games)
         result["winner"] = list(parse_players(winner, players))
         result["others"] = [list(parse_players(p, players)) for p in others if p]
         results.append(result)
@@ -52,8 +64,10 @@ def convert_workbook(db: sqlite3.Connection, wb: CalamineWorkbook):
     players = read_alias_table(wb.get_sheet_by_name("Players"))
     results = read_results_table(wb.get_sheet_by_name("Results"), games, players)
     cur = db.cursor()
-    cur.executemany("INSERT OR IGNORE INTO game (name, id) VALUES (?, ?);", games.items())
-    cur.executemany("INSERT OR IGNORE INTO player (name, id) VALUES (?, ?);", players.items())
+    cur.executemany("INSERT OR IGNORE INTO game (id, name) VALUES (?, ?);",
+                    ((id_, name) for name, id_ in games.items()))
+    cur.executemany("INSERT OR IGNORE INTO player (id, name) VALUES (?, ?);",
+                    ((id_, name) for name, id_ in players.items()))
     db.commit()
     for result in results:
         cur.execute("INSERT INTO event (date, game_id) VALUES (?, ?);",
