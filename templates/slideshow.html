@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Leaderboard Slideshow</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: #f5f5f5;
+            font-family: sans-serif;
+        }
+        .slide {
+            display: none;
+            box-sizing: border-box;
+            height: 100vh;
+            padding: 3rem;
+        }
+        .slide.active {
+            display: block;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 3rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1.5rem;
+        }
+        td, th {
+            padding: 0.5rem;
+            border-bottom: 1px solid #333;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<div id="slides"></div>
+<script>
+const DURATION_MS = 14000;
+
+function htmlEscape(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+}
+
+function renderWinnerCircle(slide) {
+    const rows = slide.winners.map((row) => {
+        const award = row.award ? row.award : "";
+        return `<tr><td>${htmlEscape(row.name)}</td><td>${award}</td><td>${row.nights_won}</td></tr>`;
+    }).join("");
+    return `
+    <section class="slide">
+        <h1>${htmlEscape(slide.title)}</h1>
+        <table><thead><tr><th>Player</th><th></th><th>Game Nights Won</th></tr></thead><tbody>${rows}</tbody></table>
+    </section>`;
+}
+
+function renderRatio(slide) {
+    const makeRows = (rows) => rows.map((row) => {
+        const ratio = row.undefeated ? "Undefeated" : Number(row.ratio).toFixed(2);
+        return `<tr><td>${htmlEscape(row.name)}</td><td>${row.wins}</td><td>${row.losses}</td><td>${ratio}</td></tr>`;
+    }).join("");
+    return `
+    <section class="slide">
+        <h1>${htmlEscape(slide.title)}</h1>
+        <h2>Top 7</h2>
+        <table><thead><tr><th>Player</th><th>Wins</th><th>Losses</th><th>W:L</th></tr></thead><tbody>${makeRows(slide.top_players)}</tbody></table>
+        <h2>Bottom 5</h2>
+        <table><thead><tr><th>Player</th><th>Wins</th><th>Losses</th><th>W:L</th></tr></thead><tbody>${makeRows(slide.bottom_players)}</tbody></table>
+    </section>`;
+}
+
+function renderGameMaster(slide) {
+    const runners = slide.runners.length ? htmlEscape(slide.runners.join(", ")) : "None yet";
+    const runnerWins = slide.runner_wins === null ? "-" : slide.runner_wins;
+    return `
+    <section class="slide">
+        <h1>${htmlEscape(slide.title)}</h1>
+        <p>Played ${slide.play_count} times</p>
+        <p><strong>Leader (${slide.leader_wins} wins):</strong> ${htmlEscape(slide.leaders.join(", "))}</p>
+        <p><strong>Runner-up (${runnerWins} wins):</strong> ${runners}</p>
+    </section>`;
+}
+
+function renderUndefeated(slide) {
+    const rows = slide.players.map((row) =>
+        `<tr><td>${htmlEscape(row.name)}</td><td>${row.wins}</td><td>${row.total}</td></tr>`
+    ).join("");
+    return `
+    <section class="slide">
+        <h1>${htmlEscape(slide.title)}</h1>
+        <table><thead><tr><th>Player</th><th>Wins</th><th>Total Games</th></tr></thead><tbody>${rows}</tbody></table>
+    </section>`;
+}
+
+function renderSlide(slide) {
+    if (slide.type === "winner_circle") return renderWinnerCircle(slide);
+    if (slide.type === "ratio_roundup") return renderRatio(slide);
+    if (slide.type === "undefeated") return renderUndefeated(slide);
+    if (slide.type === "game_master") return renderGameMaster(slide);
+    return `<section class="slide"><h1>Unknown slide</h1></section>`;
+}
+
+fetch("/api/slides")
+    .then((resp) => resp.json())
+    .then((payload) => {
+        const container = document.getElementById("slides");
+        container.innerHTML = payload.slides.map(renderSlide).join("");
+        const allSlides = Array.from(document.querySelectorAll(".slide"));
+        if (!allSlides.length) return;
+        let index = 0;
+        allSlides[index].classList.add("active");
+        setInterval(() => {
+            allSlides[index].classList.remove("active");
+            index = (index + 1) % allSlides.length;
+            allSlides[index].classList.add("active");
+        }, DURATION_MS);
+    });
+</script>
+</body>
+</html>

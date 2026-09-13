@@ -1,20 +1,20 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE game (
+CREATE TABLE IF NOT EXISTS game (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL);
 
-CREATE TABLE player (
+CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL);
 
-CREATE TABLE event (
+CREATE TABLE IF NOT EXISTS event (
     id INTEGER PRIMARY KEY,
     date TEXT NOT NULL,
     game_id INTEGER NOT NULL,
     FOREIGN KEY (game_id) REFERENCES game (id));
 
-CREATE TABLE result (
+CREATE TABLE IF NOT EXISTS result (
     event_id INTEGER NOT NULL,
     player_id INTEGER NOT NULL,
     next_teammate INTEGER,
