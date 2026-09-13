@@ -4,35 +4,193 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Leaderboard Slideshow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bree+Serif&family=Cinzel:wght@500;700&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
+        :root {
+            color-scheme: dark;
+        }
         body {
             margin: 0;
-            background: #111;
+            background: #05070d;
             color: #f5f5f5;
-            font-family: sans-serif;
+            font-family: "DM Sans", sans-serif;
+        }
+        #slides {
+            min-height: 100vh;
         }
         .slide {
             display: none;
+            position: relative;
+            overflow: hidden;
             box-sizing: border-box;
             height: 100vh;
-            padding: 3rem;
+            padding: 3.5rem;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
         }
         .slide.active {
-            display: block;
+            display: flex;
+            align-items: stretch;
+        }
+        .slide::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(3, 7, 18, 0.56), rgba(3, 7, 18, 0.24)),
+                var(--overlay, linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.34)));
+        }
+        .slide__content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.4rem;
+            width: min(1100px, 100%);
+            padding: 2.2rem 2.4rem;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 28px;
+            background: rgba(8, 12, 20, 0.28);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.38);
+        }
+        .slide__statline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: -0.3rem;
+            font-size: 1.15rem;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.86);
         }
         h1 {
-            margin-top: 0;
-            font-size: 3rem;
+            margin: 0;
+            font-size: clamp(3rem, 6vw, 5.2rem);
+            line-height: 0.95;
+            letter-spacing: 0.02em;
+        }
+        h2 {
+            margin: 0.4rem 0 0;
+            font-size: 1.25rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.82);
+        }
+        p {
+            margin: 0;
+            font-size: 1.45rem;
+            line-height: 1.45;
+        }
+        .table-card {
+            padding: 1rem 1.1rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 1.5rem;
+            font-size: 1.18rem;
         }
         td, th {
-            padding: 0.5rem;
-            border-bottom: 1px solid #333;
+            padding: 0.7rem 0.55rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
             text-align: left;
+        }
+        th {
+            font-size: 0.84rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.76);
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .split-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.3rem;
+        }
+        .callout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .callout {
+            padding: 1rem 1.15rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .callout__label {
+            display: block;
+            margin-bottom: 0.35rem;
+            font-size: 0.82rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .callout__value {
+            font-size: clamp(1.35rem, 3.2vw, 2.4rem);
+            line-height: 1.05;
+        }
+        .theme-winner-circle {
+            --overlay: linear-gradient(135deg, rgba(9, 14, 26, 0.12), rgba(10, 20, 40, 0.5));
+            font-family: "Outfit", sans-serif;
+            background-image: url("/static/backgrounds/generated-winner-circle.png");
+        }
+        .theme-winner-circle h1 {
+            font-family: "Cinzel", serif;
+            text-shadow: 0 3px 18px rgba(0, 0, 0, 0.35);
+        }
+        .theme-ratio-roundup {
+            --overlay: linear-gradient(180deg, rgba(54, 28, 16, 0.12), rgba(7, 11, 18, 0.56));
+            font-family: "Space Grotesk", sans-serif;
+            background-image: url("/static/backgrounds/boardgame-backgammon.png");
+        }
+        .theme-ratio-roundup h1 {
+            font-family: "Fraunces", serif;
+            letter-spacing: 0.02em;
+        }
+        .theme-undefeated {
+            --overlay: linear-gradient(130deg, rgba(32, 14, 8, 0.1), rgba(7, 11, 20, 0.52));
+            font-family: "Outfit", sans-serif;
+            background-image: url("/static/backgrounds/boardgame-checkerboard.png");
+        }
+        .theme-undefeated h1 {
+            font-family: "Abril Fatface", serif;
+            letter-spacing: 0.03em;
+        }
+        .theme-game-master {
+            --overlay: linear-gradient(135deg, rgba(18, 30, 14, 0.12), rgba(7, 12, 18, 0.56));
+            font-family: "JetBrains Mono", monospace;
+            background-image: url("/static/backgrounds/boardgame-felt-dice.png");
+        }
+        .theme-game-master h1 {
+            font-family: "Bree Serif", serif;
+        }
+        .theme-game-master .slide__content {
+            max-width: 900px;
+        }
+        @media (max-width: 900px) {
+            .slide {
+                padding: 1.25rem;
+            }
+            .slide__content {
+                padding: 1.35rem;
+            }
+            .split-grid {
+                grid-template-columns: 1fr;
+            }
+            table {
+                font-size: 1rem;
+            }
+            p {
+                font-size: 1.15rem;
+            }
         }
     </style>
 </head>
@@ -40,7 +198,6 @@
 <div id="slides"></div>
 <script>
 const DURATION_MS = 14000;
-
 function htmlEscape(value) {
     return String(value)
         .replaceAll("&", "&amp;")
@@ -48,16 +205,28 @@ function htmlEscape(value) {
         .replaceAll(">", "&gt;");
 }
 
+function openSlide(slide, content) {
+    const themeClass = `theme-${slide.type.replaceAll("_", "-")}`;
+    return `
+    <section class="slide ${themeClass}">
+        <div class="slide__content">
+            ${content}
+        </div>
+    </section>`;
+}
+
 function renderWinnerCircle(slide) {
     const rows = slide.winners.map((row) => {
         const award = row.award ? row.award : "";
         return `<tr><td>${htmlEscape(row.name)}</td><td>${award}</td><td>${row.nights_won}</td></tr>`;
     }).join("");
-    return `
-    <section class="slide">
+    return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
-        <table><thead><tr><th>Player</th><th></th><th>Game Nights Won</th></tr></thead><tbody>${rows}</tbody></table>
-    </section>`;
+        <div class="slide__statline">Dominated game night by winning more games than anyone else.</div>
+        <div class="table-card">
+            <table><thead><tr><th>Player</th><th></th><th>Game Nights Won</th></tr></thead><tbody>${rows}</tbody></table>
+        </div>
+    `);
 }
 
 function renderRatio(slide) {
@@ -65,37 +234,54 @@ function renderRatio(slide) {
         const ratio = row.undefeated ? "Undefeated" : Number(row.ratio).toFixed(2);
         return `<tr><td>${htmlEscape(row.name)}</td><td>${row.wins}</td><td>${row.losses}</td><td>${ratio}</td></tr>`;
     }).join("");
-    return `
-    <section class="slide">
+    return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
-        <h2>Top 7</h2>
-        <table><thead><tr><th>Player</th><th>Wins</th><th>Losses</th><th>W:L</th></tr></thead><tbody>${makeRows(slide.top_players)}</tbody></table>
-        <h2>Bottom 5</h2>
-        <table><thead><tr><th>Player</th><th>Wins</th><th>Losses</th><th>W:L</th></tr></thead><tbody>${makeRows(slide.bottom_players)}</tbody></table>
-    </section>`;
+        <div class="slide__statline">Best and worst win-loss ratios among players with at least one loss.</div>
+        <div class="split-grid">
+            <div class="table-card">
+                <h2>Top 7</h2>
+                <table><thead><tr><th>Player</th><th>Wins</th><th>Losses</th><th>W:L</th></tr></thead><tbody>${makeRows(slide.top_players)}</tbody></table>
+            </div>
+            <div class="table-card">
+                <h2>Bottom 5</h2>
+                <table><thead><tr><th>Player</th><th>Wins</th><th>Losses</th><th>W:L</th></tr></thead><tbody>${makeRows(slide.bottom_players)}</tbody></table>
+            </div>
+        </div>
+    `);
 }
 
 function renderGameMaster(slide) {
     const runners = slide.runners.length ? htmlEscape(slide.runners.join(", ")) : "None yet";
     const runnerWins = slide.runner_wins === null ? "-" : slide.runner_wins;
-    return `
-    <section class="slide">
+    return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
-        <p>Played ${slide.play_count} times</p>
-        <p><strong>Leader (${slide.leader_wins} wins):</strong> ${htmlEscape(slide.leaders.join(", "))}</p>
+        <div class="slide__statline">Players who rule this game, with the most wins and the closest challengers.</div>
+        <div class="callout-grid">
+            <div class="callout">
+                <span class="callout__label">Played</span>
+                <span class="callout__value">${slide.play_count} sessions</span>
+            </div>
+            <div class="callout">
+                <span class="callout__label">Leader</span>
+                <span class="callout__value">${htmlEscape(slide.leaders.join(", "))}</span>
+            </div>
+        </div>
+        <p><strong>Leader wins:</strong> ${slide.leader_wins}</p>
         <p><strong>Runner-up (${runnerWins} wins):</strong> ${runners}</p>
-    </section>`;
+    `);
 }
 
 function renderUndefeated(slide) {
     const rows = slide.players.map((row) =>
         `<tr><td>${htmlEscape(row.name)}</td><td>${row.wins}</td><td>${row.total}</td></tr>`
     ).join("");
-    return `
-    <section class="slide">
+    return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
-        <table><thead><tr><th>Player</th><th>Wins</th><th>Total Games</th></tr></thead><tbody>${rows}</tbody></table>
-    </section>`;
+        <div class="slide__statline">Players still holding a perfect record with wins and no losses.</div>
+        <div class="table-card">
+            <table><thead><tr><th>Player</th><th>Wins</th><th>Total Games</th></tr></thead><tbody>${rows}</tbody></table>
+        </div>
+    `);
 }
 
 function renderSlide(slide) {
@@ -103,7 +289,7 @@ function renderSlide(slide) {
     if (slide.type === "ratio_roundup") return renderRatio(slide);
     if (slide.type === "undefeated") return renderUndefeated(slide);
     if (slide.type === "game_master") return renderGameMaster(slide);
-    return `<section class="slide"><h1>Unknown slide</h1></section>`;
+    return `<section class="slide"><div class="slide__content"><h1>Unknown slide</h1></div></section>`;
 }
 
 fetch("/api/slides")
