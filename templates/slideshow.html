@@ -216,15 +216,20 @@ function openSlide(slide, content) {
 }
 
 function renderWinnerCircle(slide) {
-    const rows = slide.winners.map((row) => {
+    const renderRows = (winners) => winners.map((row) => {
         const award = row.award ? row.award : "";
         return `<tr><td>${htmlEscape(row.name)}</td><td>${award}</td><td>${row.nights_won}</td></tr>`;
     }).join("");
+    const columns = slide.winner_columns.map((winners) => `
+        <div class="table-card">
+            <table><thead><tr><th>Player</th><th></th><th>Game Nights Won</th></tr></thead><tbody>${renderRows(winners)}</tbody></table>
+        </div>
+    `).join("");
     return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
         <div class="slide__statline">Dominated game night by winning more games than anyone else.</div>
-        <div class="table-card">
-            <table><thead><tr><th>Player</th><th></th><th>Game Nights Won</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="split-grid">
+            ${columns}
         </div>
     `);
 }
@@ -251,8 +256,12 @@ function renderRatio(slide) {
 }
 
 function renderGameMaster(slide) {
-    const runners = slide.runners.length ? htmlEscape(slide.runners.join(", ")) : "None yet";
+    const runners = slide.runners.length
+        ? slide.runners.map((runner) => htmlEscape(runner)).join("<br>")
+        : "None yet";
     const runnerWins = slide.runner_wins === null ? "-" : slide.runner_wins;
+    const runnerLabel = slide.runners.length > 1 ? "Runners-up" : "Runner-up";
+    const winLabel = slide.runner_wins === 1 ? "win" : "wins";
     return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
         <div class="slide__statline">Players who rule this game, with the most wins and the closest challengers.</div>
@@ -267,7 +276,7 @@ function renderGameMaster(slide) {
             </div>
         </div>
         <p><strong>Leader wins:</strong> ${slide.leader_wins}</p>
-        <p><strong>Runner-up (${runnerWins} wins):</strong> ${runners}</p>
+        <p><strong>${runnerLabel} (${runnerWins} ${winLabel}):</strong> ${runners}</p>
     `);
 }
 

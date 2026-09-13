@@ -33,6 +33,11 @@ def award_winner_circle(rows):
     return ordered
 
 
+def split_winner_circle_columns(rows):
+    midpoint = (len(rows) + 1) // 2
+    return [rows[:midpoint], rows[midpoint:]]
+
+
 def winner_circle_slide(db):
     rows = db.execute("""
     WITH per_day_player_wins AS (
@@ -63,11 +68,11 @@ def winner_circle_slide(db):
     GROUP BY player.id
     ORDER BY nights_won DESC, player.name ASC;
     """)
-    winners = [dict(row) for row in rows]
+    winners = award_winner_circle([dict(row) for row in rows])
     return {
         "type": "winner_circle",
         "title": "Winner's Circle",
-        "winners": award_winner_circle(winners),
+        "winner_columns": split_winner_circle_columns(winners),
     }
 
 
