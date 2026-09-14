@@ -12,10 +12,23 @@ from db_utils import DEFAULT_DB_PATH, write_workbook_to_db
 app = Flask(__name__)
 
 
-def get_db():
-    db = sqlite3.connect(DEFAULT_DB_PATH)
+def last_name(name):
+    if name is None:
+        return None
+    stripped = name.strip()
+    if not stripped:
+        return None
+    return stripped.rsplit(" ", 1)[-1]
+
+
+def configure_db(db):
     db.row_factory = sqlite3.Row
+    db.create_function("last_name", 1, last_name)
     return db
+
+
+def get_db():
+    return configure_db(sqlite3.connect(DEFAULT_DB_PATH))
 
 
 def award_for_place(place):
@@ -33,15 +46,15 @@ def award_winner_circle(rows):
     distinct_scores = []
     for row in ordered:
         if not distinct_scores or distinct_scores[-1][0] != row["nights_won"]:
-           distinct_scores.append([row["nights_won"], []])
+            distinct_scores.append([row["nights_won"], []])
         distinct_scores[-1][1].append(row)
 
     place = 1
     for _, tied_rows in distinct_scores:
         medal = award_for_place(place)
         for row in tied_rows:
-           row["award"] = medal
-           row["place"] = place
+            row["award"] = medal
+            row["place"] = place
         place += len(tied_rows)
 
     for row in ordered:
@@ -58,7 +71,17 @@ def split_winner_circle_columns(rows):
 
 def winner_circle_slide(db):
     rows = db.execute("""
-    WITH per_day_player_wins AS (
+    WITH qualifying_days AS (
+        SELECT
+           event.date AS event_date
+        FROM event
+        JOIN result ON result.event_id = event.id
+        JOIN player ON player.id = result.player_id
+        GROUP BY event.date
+        HAVING COUNT(DISTINCT last_name(player.name)) >= 3
+           AND COUNT(DISTINCT event.id) >= 2
+    ),
+    per_day_player_wins AS (
         SELECT
            event.date AS event_date,
            result.player_id AS player_id,
@@ -73,16 +96,26 @@ def winner_circle_slide(db):
         FROM per_day_player_wins
         GROUP BY event_date
     ),
-    per_day_winners AS (
-        SELECT p.player_id
+    per_day_winner_counts AS (
+        SELECT p.event_date, COUNT(*) AS winner_count
         FROM per_day_player_wins p
         JOIN per_day_max m
          ON m.event_date = p.event_date
          AND m.max_wins = p.wins
+        GROUP BY p.event_date
+    ),
+    valid_nights AS (
+        SELECT d.event_date
+        FROM qualifying_days d
+        JOIN per_day_winner_counts w ON w.event_date = d.event_date
+        WHERE w.winner_count = 1
     )
     SELECT player.id, player.name, COUNT(*) AS nights_won
-    FROM per_day_winners
-    JOIN player ON player.id = per_day_winners.player_id
+    FROM valid_nights
+    JOIN per_day_player_wins ON per_day_player_wins.event_date = valid_nights.event_date
+    JOIN per_day_max ON per_day_max.event_date = valid_nights.event_date
+        AND per_day_max.max_wins = per_day_player_wins.wins
+    JOIN player ON player.id = per_day_player_wins.player_id
     GROUP BY player.id
     ORDER BY nights_won DESC, player.name ASC;
     """)
