@@ -6,7 +6,7 @@
     <title>Leaderboard Slideshow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bree+Serif&family=Cinzel:wght@500;700&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bree+Serif&family=Cinzel:wght@500;700&family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;700;800&family=Playfair+Display:wght@600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
         :root {
             color-scheme: dark;
@@ -154,6 +154,15 @@
             font-family: "Cinzel", serif;
             text-shadow: 0 3px 18px rgba(0, 0, 0, 0.35);
         }
+        .theme-game-night-favorites {
+            --overlay: linear-gradient(140deg, rgba(14, 18, 28, 0.18), rgba(6, 8, 15, 0.62));
+            font-family: "Space Grotesk", sans-serif;
+            background-image: url("/static/backgrounds/game-night-favorites.jpg");
+        }
+        .theme-game-night-favorites h1 {
+            font-family: "Playfair Display", serif;
+            letter-spacing: 0.01em;
+        }
         .theme-ratio-roundup {
             --overlay: linear-gradient(180deg, rgba(54, 28, 16, 0.12), rgba(7, 11, 18, 0.56));
             font-family: "Space Grotesk", sans-serif;
@@ -242,6 +251,19 @@ function renderWinnerCircle(slide) {
     `);
 }
 
+function renderGameNightFavorites(slide) {
+    const rows = slide.games.map((row) =>
+        `<tr><td>${htmlEscape(row.name)}</td><td>${row.play_count}</td></tr>`
+    ).join("");
+    return openSlide(slide, `
+        <h1>${htmlEscape(slide.title)}</h1>
+        <div class="slide__statline">Most played games across the same qualifying nights used by Winner's Circle.</div>
+        <div class="table-card">
+            <table><thead><tr><th>Game</th><th>Plays</th></tr></thead><tbody>${rows}</tbody></table>
+        </div>
+    `);
+}
+
 function renderRatio(slide) {
     const makeRows = (rows) => rows.map((row) => {
         const ratio = row.undefeated ? "Undefeated" : Number(row.ratio).toFixed(2);
@@ -290,19 +312,20 @@ function renderGameMaster(slide) {
 
 function renderUndefeated(slide) {
     const rows = slide.players.map((row) =>
-        `<tr><td>${htmlEscape(row.name)}</td><td>${row.wins}</td><td>${row.total}</td></tr>`
+        `<tr><td>${htmlEscape(row.name)}</td><td>${row.wins}</td><td>${row.total}</td><td>${htmlEscape(row.best_game)}</td></tr>`
     ).join("");
     return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
         <div class="slide__statline">Players still holding a perfect record with wins and no losses.</div>
         <div class="table-card">
-            <table><thead><tr><th>Player</th><th>Wins</th><th>Total Games</th></tr></thead><tbody>${rows}</tbody></table>
+            <table><thead><tr><th>Player</th><th>Wins</th><th>Total Games</th><th>Best Game</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
     `);
 }
 
 function renderSlide(slide) {
     if (slide.type === "winner_circle") return renderWinnerCircle(slide);
+    if (slide.type === "game_night_favorites") return renderGameNightFavorites(slide);
     if (slide.type === "ratio_roundup") return renderRatio(slide);
     if (slide.type === "undefeated") return renderUndefeated(slide);
     if (slide.type === "game_master") return renderGameMaster(slide);

@@ -78,18 +78,23 @@ def split_winner_circle_columns(rows):
     return [rows[:midpoint], rows[midpoint:]]
 
 
+QUALIFYING_DAYS_CTE = """
+qualifying_days AS (
+    SELECT
+       event.date AS event_date
+    FROM event
+    JOIN result ON result.event_id = event.id
+    JOIN player ON player.id = result.player_id
+    GROUP BY event.date
+    HAVING COUNT(DISTINCT last_name(player.name)) >= 3
+       AND COUNT(DISTINCT event.id) >= 2
+)
+"""
+
+
 def winner_circle_slide(db):
-    rows = db.execute("""
-    WITH qualifying_days AS (
-        SELECT
-           event.date AS event_date
-        FROM event
-        JOIN result ON result.event_id = event.id
-        JOIN player ON player.id = result.player_id
-        GROUP BY event.date
-        HAVING COUNT(DISTINCT last_name(player.name)) >= 3
-           AND COUNT(DISTINCT event.id) >= 2
-    ),
+    rows = db.execute(f"""
+    WITH {QUALIFYING_DAYS_CTE},
     per_day_player_wins AS (
         SELECT
            event.date AS event_date,
@@ -155,6 +160,28 @@ def winner_circle_slide(db):
     }
 
 
+def game_night_favorites_slide(db):
+    rows = [dict(row) for row in db.execute(f"""
+    WITH {QUALIFYING_DAYS_CTE}
+    SELECT
+        game.id AS game_id,
+        game.name AS name,
+        COUNT(*) AS play_count
+    FROM qualifying_days
+    JOIN event ON event.date = qualifying_days.event_date
+    JOIN game ON game.id = event.game_id
+    WHERE game.name != 'Rock-Paper-Scissors'
+    GROUP BY game.id
+    ORDER BY play_count DESC, name ASC
+    LIMIT 10;
+    """)]
+    return {
+        "type": "game_night_favorites",
+        "title": "Game Night Favorites",
+        "games": rows,
+    }
+
+
 def ratio_roundup_slide(db):
     rows = [dict(row) for row in db.execute("""
     WITH per_player AS (
@@ -213,15 +240,44 @@ def undefeated_slide(db):
         FROM player
         JOIN result ON result.player_id = player.id
         GROUP BY player.id
+    ),
+    per_player_game_wins AS (
+        SELECT
+            result.player_id AS player_id,
+            game.name AS game_name,
+            COUNT(*) AS game_wins
+        FROM result
+        JOIN event ON event.id = result.event_id
+        JOIN game ON game.id = event.game_id
+        WHERE result.winner = TRUE
+        GROUP BY result.player_id, game.id
+    ),
+    ranked_games AS (
+        SELECT
+            player_id,
+            game_name,
+            game_wins,
+            ROW_NUMBER() OVER (
+                PARTITION BY player_id
+                ORDER BY game_wins DESC, game_name ASC
+            ) AS rn
+        FROM per_player_game_wins
     )
-    SELECT player_id, name, wins, losses, total
+    SELECT
+        per_player.player_id,
+        per_player.name,
+        per_player.wins,
+        per_player.losses,
+        per_player.total,
+        ranked_games.game_name AS best_game
     FROM per_player
+    JOIN ranked_games ON ranked_games.player_id = per_player.player_id AND ranked_games.rn = 1
     WHERE wins > 0 AND losses = 0
     ORDER BY total DESC, wins DESC, name ASC;
     """)]
     return {
         "type": "undefeated",
-        "title": "The Undefeated",
+        "title": "Undefeated",
         "players": rows,
     }
 
@@ -275,7 +331,7 @@ def game_master_slides(db):
 def build_slides_payload():
     db = get_db()
     try:
-        slides = [winner_circle_slide(db), ratio_roundup_slide(db), undefeated_slide(db), *game_master_slides(db)]
+        slides = [winner_circle_slide(db), game_night_favorites_slide(db), ratio_roundup_slide(db), undefeated_slide(db), *game_master_slides(db)]
         return {"slides": slides}
     finally:
         db.close()
