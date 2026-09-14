@@ -17,6 +17,17 @@ def get_db():
     db.row_factory = sqlite3.Row
     return db
 
+
+def award_for_place(place):
+    if place == 1:
+        return "🏆"
+    if place == 2:
+        return "🥈"
+    if place == 3:
+        return "🥉"
+    return ""
+
+
 def award_winner_circle(rows):
     ordered = sorted(rows, key=lambda row: (-row["nights_won"], row["name"]))
     distinct_scores = []
@@ -25,11 +36,13 @@ def award_winner_circle(rows):
            distinct_scores.append([row["nights_won"], []])
         distinct_scores[-1][1].append(row)
 
-    for index, (_, tied_rows) in enumerate(distinct_scores[:3]):
-        medal = ["🏆", "🥈", "🥉"][index]
+    place = 1
+    for _, tied_rows in distinct_scores:
+        medal = award_for_place(place)
         for row in tied_rows:
            row["award"] = medal
-           row["place"] = index + 1
+           row["place"] = place
+        place += len(tied_rows)
 
     for row in ordered:
         row.setdefault("award", "")
