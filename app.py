@@ -1,16 +1,21 @@
 #!python3
-from flask import Flask, jsonify, render_template
-
+import os
+import pathlib
 import sqlite3
+import tempfile
 
+from flask import Flask, jsonify, render_template, request
 
-def get_db():
-    db = sqlite3.connect("results.db")
-    db.row_factory = sqlite3.Row
-    return db
+from db_utils import DEFAULT_DB_PATH, write_workbook_to_db
 
 
 app = Flask(__name__)
+
+
+def get_db():
+    db = sqlite3.connect(DEFAULT_DB_PATH)
+    db.row_factory = sqlite3.Row
+    return db
 
 def award_winner_circle(rows):
     ordered = sorted(rows, key=lambda row: (-row["nights_won"], row["name"]))
@@ -195,14 +200,52 @@ def game_master_slides(db):
 
 def build_slides_payload():
     db = get_db()
-    slides = [winner_circle_slide(db), ratio_roundup_slide(db), undefeated_slide(db), *game_master_slides(db)]
-    return {"slides": slides}
+    try:
+        slides = [winner_circle_slide(db), ratio_roundup_slide(db), undefeated_slide(db), *game_master_slides(db)]
+        return {"slides": slides}
+    finally:
+        db.close()
 
 
 @app.route("/")
+def index():
+    return render_template("index.html")
+
+
+def replace_results_database(uploaded_file):
+    upload_fd, upload_name = tempfile.mkstemp(suffix=".ods")
+    os.close(upload_fd)
+    uploaded_path = pathlib.Path(upload_name)
+    db_fd, db_name = tempfile.mkstemp(prefix="results-", suffix=".db", dir=str(DEFAULT_DB_PATH.parent))
+    os.close(db_fd)
+    temp_db_path = pathlib.Path(db_name)
+    try:
+        uploaded_file.save(uploaded_path)
+        write_workbook_to_db(uploaded_path, temp_db_path)
+        os.replace(temp_db_path, DEFAULT_DB_PATH)
+    finally:
+        if uploaded_path.exists():
+            uploaded_path.unlink()
+        if temp_db_path.exists():
+            temp_db_path.unlink()
+
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+    if request.method == "POST":
+        uploaded_file = request.files.get("workbook")
+        if uploaded_file is None or uploaded_file.filename == "":
+            return render_template("upload.html", error="Choose an .ods file to upload.")
+        if pathlib.Path(uploaded_file.filename).suffix.lower() != ".ods":
+            return render_template("upload.html", error="Only .ods files are supported.")
+        replace_results_database(uploaded_file)
+        return render_template("upload.html", success="results.db was replaced successfully.")
+    return render_template("upload.html")
+
+
+@app.route("/kiosk")
 def slideshow():
     return render_template("slideshow.html")
-
 
 @app.route("/api/slides")
 def api_slides():

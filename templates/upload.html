@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Upload leaderboard data</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, sans-serif;
+            background: #111827;
+            color: #f9fafb;
+        }
+        main {
+            max-width: 42rem;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+        }
+        form, .message {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            background: #1f2937;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        input[type="file"] {
+            display: block;
+            margin-bottom: 1rem;
+        }
+        button, a.button {
+            display: inline-block;
+            padding: 0.8rem 1.05rem;
+            border: 0;
+            border-radius: 0.75rem;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .error {
+            background: #7f1d1d;
+        }
+        .success {
+            background: #14532d;
+        }
+        .actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .muted {
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Upload leaderboard data</h1>
+    <p class="muted">Choose an `.ods` file and the server will replace `results.db` with the converted contents.</p>
+
+    {% if error %}
+    <div class="message error">{{ error }}</div>
+    {% endif %}
+
+    {% if success %}
+    <div class="message success">{{ success }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        <label for="workbook">Spreadsheet file</label>
+        <input id="workbook" name="workbook" type="file" accept=".ods" />
+        <button type="submit">Upload and replace database</button>
+    </form>
+
+    <div class="actions">
+        <a class="button" href="/">Back to home</a>
+        <a class="button" href="/kiosk">Open kiosk slideshow</a>
+    </div>
+</main>
+</body>
+</html>
