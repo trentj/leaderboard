@@ -33,7 +33,8 @@
         }
         .slide.active {
             display: flex;
-            align-items: stretch;
+            align-items: center;
+            justify-content: center;
         }
         .slide::before {
             content: "";
@@ -56,6 +57,7 @@
             background: rgba(8, 12, 20, 0.28);
             backdrop-filter: blur(12px);
             box-shadow: 0 30px 70px rgba(0, 0, 0, 0.38);
+            text-align: center;
         }
         .slide__statline {
             display: flex;
@@ -340,12 +342,43 @@ fetch("/api/slides")
         const allSlides = Array.from(document.querySelectorAll(".slide"));
         if (!allSlides.length) return;
         let index = 0;
-        allSlides[index].classList.add("active");
-        setInterval(() => {
+        let timerId = null;
+        let timerLocked = false;
+
+        const showSlide = (nextIndex) => {
             allSlides[index].classList.remove("active");
-            index = (index + 1) % allSlides.length;
+            index = (nextIndex + allSlides.length) % allSlides.length;
             allSlides[index].classList.add("active");
+        };
+
+        const stopTimer = () => {
+            if (timerId !== null) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            timerLocked = true;
+        };
+
+        const moveSlide = (step) => {
+            showSlide(index + step);
+        };
+
+        allSlides[index].classList.add("active");
+        timerId = setInterval(() => {
+            if (timerLocked) {
+                return;
+            }
+            moveSlide(1);
         }, DURATION_MS);
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+                return;
+            }
+            event.preventDefault();
+            stopTimer();
+            moveSlide(event.key === "ArrowLeft" ? -1 : 1);
+        });
     });
 </script>
 </body>
