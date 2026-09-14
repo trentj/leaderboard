@@ -226,11 +226,11 @@ function openSlide(slide, content) {
 function renderWinnerCircle(slide) {
     const renderRows = (winners) => winners.map((row) => {
         const award = row.award ? row.award : "";
-        return `<tr><td>${htmlEscape(row.name)}</td><td>${award}</td><td>${row.nights_won}</td></tr>`;
+        return `<tr><td>${htmlEscape(row.name)}</td><td>${award}</td><td>${row.nights_won}</td><td>${row.nights_attended}</td></tr>`;
     }).join("");
     const columns = slide.winner_columns.map((winners) => `
         <div class="table-card">
-            <table><thead><tr><th>Player</th><th></th><th>Game Nights Won</th></tr></thead><tbody>${renderRows(winners)}</tbody></table>
+            <table><thead><tr><th>Player</th><th></th><th>Wins</th><th>Game Nights Attended</th></tr></thead><tbody>${renderRows(winners)}</tbody></table>
         </div>
     `).join("");
     return openSlide(slide, `

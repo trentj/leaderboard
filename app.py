@@ -42,11 +42,20 @@ def award_for_place(place):
 
 
 def award_winner_circle(rows):
-    ordered = sorted(rows, key=lambda row: (-row["nights_won"], row["name"]))
+    ordered = sorted(
+        rows,
+        key=lambda row: (
+            -(row.get("score", row["nights_won"])),
+            -(row.get("nights_attended", 0)),
+            row["name"],
+        ),
+    )
     distinct_scores = []
     for row in ordered:
-        if not distinct_scores or distinct_scores[-1][0] != row["nights_won"]:
-            distinct_scores.append([row["nights_won"], []])
+        score = row.get("score", row["nights_won"])
+        nights_attended = row.get("nights_attended", 0)
+        if not distinct_scores or distinct_scores[-1][0] != (score, nights_attended):
+            distinct_scores.append([(score, nights_attended), []])
         distinct_scores[-1][1].append(row)
 
     place = 1
@@ -109,17 +118,36 @@ def winner_circle_slide(db):
         FROM qualifying_days d
         JOIN per_day_winner_counts w ON w.event_date = d.event_date
         WHERE w.winner_count = 1
+    ),
+    night_winners AS (
+        SELECT DISTINCT p.event_date, p.player_id
+        FROM per_day_player_wins p
+        JOIN per_day_max m
+         ON m.event_date = p.event_date
+         AND m.max_wins = p.wins
+        JOIN valid_nights v ON v.event_date = p.event_date
+    ),
+    night_attendance AS (
+        SELECT DISTINCT qualifying_days.event_date, result.player_id
+        FROM qualifying_days
+        JOIN event ON event.date = qualifying_days.event_date
+        JOIN result ON result.event_id = event.id
     )
-    SELECT player.id, player.name, COUNT(*) AS nights_won
-    FROM valid_nights
-    JOIN per_day_player_wins ON per_day_player_wins.event_date = valid_nights.event_date
-    JOIN per_day_max ON per_day_max.event_date = valid_nights.event_date
-        AND per_day_max.max_wins = per_day_player_wins.wins
-    JOIN player ON player.id = per_day_player_wins.player_id
+    SELECT
+        player.id,
+        player.name,
+        COUNT(DISTINCT night_winners.event_date) AS nights_won,
+        COUNT(DISTINCT night_attendance.event_date) AS nights_attended
+    FROM night_winners
+    JOIN night_attendance ON night_attendance.player_id = night_winners.player_id
+    JOIN player ON player.id = night_winners.player_id
     GROUP BY player.id
     ORDER BY nights_won DESC, player.name ASC;
     """)
-    winners = award_winner_circle([dict(row) for row in rows])
+    winners = [dict(row) for row in rows]
+    for row in winners:
+        row["score"] = 100 * (row["nights_won"] * row["nights_won"] + row["nights_won"]) // (row["nights_attended"] + 1)
+    winners = award_winner_circle(winners)
     return {
         "type": "winner_circle",
         "title": "Winner's Circle",
