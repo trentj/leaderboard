@@ -1,5 +1,6 @@
 import pathlib
 import sqlite3
+import re
 from itertools import repeat
 
 from python_calamine import CalamineWorkbook
@@ -15,6 +16,12 @@ def read_alias_table(sheet):
     id_ = 1
     for row in sheet.iter_rows():
         for alias in row:
+            if alias is None:
+                continue
+            if isinstance(alias, str):
+                alias = alias.strip()
+            if not alias:
+                continue
             result[alias] = id_
         id_ += 1
     return result
@@ -46,20 +53,32 @@ def parse_players(nicknames, players):
         yield resolve_player(nick, players)
 
 
+def parse_result_row(row, games, players):
+    date, game, winner, *others = row
+    result = {
+        "date": date,
+        "game": resolve_game(game, games),
+    }
+    tie_match = re.fullmatch(r"TIE(\d*)", winner) if isinstance(winner, str) else None
+    if tie_match:
+        tie_count = int(tie_match.group(1) or 2)
+        winner_cells = others[:tie_count]
+        others = others[tie_count:]
+        result["winner"] = [player for cell in winner_cells if cell for player in parse_players(cell, players)]
+    else:
+        result["winner"] = list(parse_players(winner, players))
+    result["others"] = [list(parse_players(p, players)) for p in others if p]
+    return result
+
+
 def read_results_table(sheet, games, players):
     results = []
     first_row = True
     for row in sheet.iter_rows():
-        result = {}
         if first_row:
             first_row = False
             continue
-        date, game, winner, *others = row
-        result["date"] = date
-        result["game"] = resolve_game(game, games)
-        result["winner"] = list(parse_players(winner, players))
-        result["others"] = [list(parse_players(p, players)) for p in others if p]
-        results.append(result)
+        results.append(parse_result_row(row, games, players))
     return results
 
 
