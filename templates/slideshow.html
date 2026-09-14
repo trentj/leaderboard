@@ -84,6 +84,14 @@
             font-size: 1.45rem;
             line-height: 1.45;
         }
+        .detail-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+        }
+        .detail-line__value {
+            display: block;
+        }
         .table-card {
             padding: 1rem 1.1rem;
             border-radius: 20px;
@@ -276,7 +284,7 @@ function renderGameMaster(slide) {
             </div>
         </div>
         <p><strong>Leader wins:</strong> ${slide.leader_wins}</p>
-        <p><strong>${runnerLabel} (${runnerWins} ${winLabel}):</strong> ${runners}</p>
+        <p class="detail-line"><strong>${runnerLabel} (${runnerWins} ${winLabel}):</strong><span class="detail-line__value">${runners}</span></p>
     `);
 }
 
