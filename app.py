@@ -151,7 +151,7 @@ def winner_circle_slide(db):
     """)
     winners = [dict(row) for row in rows]
     for row in winners:
-        row["score"] = 100 * (row["nights_won"] * row["nights_won"] + row["nights_won"]) // (row["nights_attended"] + 1)
+        row["score"] = 100 * (row["nights_won"] * row["nights_won"] - row["nights_won"]) // row["nights_attended"]
     winners = award_winner_circle(winners)
     return {
         "type": "winner_circle",
