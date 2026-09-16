@@ -87,6 +87,7 @@
             line-height: 1.45;
         }
         .detail-line {
+            text-align: left;
             display: flex;
             align-items: flex-start;
             gap: 0.45rem;
@@ -130,6 +131,7 @@
             gap: 1rem;
         }
         .callout {
+            text-align: left;
             padding: 1rem 1.15rem;
             border-radius: 18px;
             background: rgba(255, 255, 255, 0.06);
@@ -259,7 +261,7 @@ function renderGameNightFavorites(slide) {
     ).join("");
     return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
-        <div class="slide__statline">Most played games across the same qualifying nights used by Winner's Circle.</div>
+        <div class="slide__statline">Most played games across qualifying game nights.</div>
         <div class="table-card">
             <table><thead><tr><th>Game</th><th>Plays</th></tr></thead><tbody>${rows}</tbody></table>
         </div>
@@ -296,18 +298,18 @@ function renderGameMaster(slide) {
     const winLabel = slide.runner_wins === 1 ? "win" : "wins";
     return openSlide(slide, `
         <h1>${htmlEscape(slide.title)}</h1>
-        <div class="slide__statline">Players who rule this game, with the most wins and the closest challengers.</div>
+        <div class="slide__statline">Won this game more times than anyone else.</div>
         <div class="callout-grid">
             <div class="callout">
-                <span class="callout__label">Played</span>
-                <span class="callout__value">${slide.play_count} sessions</span>
+                <span class="callout__label">Wins</span>
+                <span class="callout__value">${slide.leader_wins}</span>
             </div>
             <div class="callout">
                 <span class="callout__label">Leader</span>
-                <span class="callout__value">${htmlEscape(slide.leaders.join(", "))}</span>
+                <span class="callout__value">${slide.leaders.map((leader) => htmlEscape(leader)).join("<br>")}</span>
             </div>
         </div>
-        <p><strong>Leader wins:</strong> ${slide.leader_wins}</p>
+        <p><strong>Games played:</strong> ${slide.play_count}</p>
         <p class="detail-line"><strong>${runnerLabel} (${runnerWins} ${winLabel}):</strong><span class="detail-line__value">${runners}</span></p>
     `);
 }

@@ -155,7 +155,7 @@ def winner_circle_slide(db):
     winners = award_winner_circle(winners)
     return {
         "type": "winner_circle",
-        "title": "Winner's Circle",
+        "title": "Winners' Circle",
         "winner_columns": split_winner_circle_columns(winners),
     }
 
