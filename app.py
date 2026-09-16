@@ -86,7 +86,7 @@ qualifying_days AS (
     JOIN result ON result.event_id = event.id
     JOIN player ON player.id = result.player_id
     GROUP BY event.date
-    HAVING COUNT(DISTINCT last_name(player.name)) >= 3
+    HAVING COUNT(DISTINCT last_name(player.name)) >= 2
        AND COUNT(DISTINCT event.id) >= 2
 )
 """
@@ -288,7 +288,7 @@ def game_master_slides(db):
     FROM game
     JOIN event ON event.game_id = game.id
     GROUP BY game.id
-    HAVING COUNT(event.id) >= 7
+    HAVING COUNT(event.id) >= 3
     ORDER BY game.name ASC;
     """)]
     slides = []
